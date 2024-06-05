@@ -1,0 +1,81 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        Int        @id @default(autoincrement())
+
+  name  String?
+  schedules Schedule[]
+    eventTypes          EventType[]          @relation("user_eventtype")
+  defaultSchduleId Int @default(0)
+   bookings            Booking[]
+}
+
+
+model Schedule {
+  id           Int           @id @default(autoincrement())
+  user         User?          @relation(fields: [userId], references: [id])
+  userId       Int
+  name         String
+  timeZone     String
+  availabilities Availability[]
+}
+
+model Availability {
+  id         Int      @id @default(autoincrement())
+
+  userId     Int?
+  eventType  EventType? @relation(fields: [eventTypeId], references: [id])
+  eventTypeId Int?
+  days       Int[]
+  startTime  DateTime
+  endTime    DateTime
+  date       DateTime?
+  schedule   Schedule  @relation(fields: [scheduleId], references: [id])
+  scheduleId Int
+}
+
+model Booking {
+  id           Int       @id @default(autoincrement())
+   user                  User?                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       Int
+  startTime    DateTime
+  endTime      DateTime
+email      String?
+  bookedBy     String
+    eventType             EventType?                 @relation(fields: [eventTypeId], references: [id])
+  eventTypeId           Int?
+}
+
+model EventType {
+  id          Int        @id @default(autoincrement())
+  title       String
+  slug        String
+  description String?
+  position    Int        @default(0)
+  length      Int
+  hidden      Boolean    @default(false)
+  availabilities Availability[]
+   users       User[]  @relation("user_eventtype")
+ bookings                             Booking[]
+  userId      Int?
+}
+
+model SelectedSlots {
+  id               Int      @id @default(autoincrement())
+  eventTypeId      Int
+  userId           Int
+  slotUtcStartDate DateTime
+  slotUtcEndDate   DateTime
+  uid              String
+  releaseAt        DateTime
+  isSeat           Boolean  @default(false)
+
+  @@unique(fields: [userId, slotUtcStartDate, slotUtcEndDate, uid], name: "selectedSlotUnique")
+}
